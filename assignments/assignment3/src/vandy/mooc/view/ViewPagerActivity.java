@@ -158,6 +158,7 @@ public class ViewPagerActivity extends FragmentActivity {
               + mCurrentImage);
         
         // Initialize the ImageLoader
+        //http://stackoverflow.com/questions/29041027/android-getresources-getdrawable-deprecated-api-22
         mLoader = new ImageLoader(getResources().getDrawable(R.drawable.loading));
     }
     

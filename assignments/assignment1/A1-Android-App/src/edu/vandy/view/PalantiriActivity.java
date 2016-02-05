@@ -77,9 +77,11 @@ public class PalantiriActivity
                                                 mPalantirEditText.getText().toString(),
                                                 mGazingIterationsEditText.getText().toString());
         // Verify that the intent will resolve to an Activity.
-        if (intent.resolveActivity(getPackageManager()) != null) 
+        if (intent.resolveActivity(getPackageManager()) != null) {
             // Launch Activity.
+        	Utils.showToast(this, "Gazing iterations: " + mGazingIterationsEditText.getText().toString());
             startActivity(intent);
+        }
         else
             Utils.showToast(this,
                             "Intent did not resolve to an Activity");

@@ -283,19 +283,19 @@ public class ImageLoader
     @Override
     public void onPostExecute(ImageLoaderWorkResult result) {
         
-        ImageViewHolder holder = result.getmImageViewHolder();
-        String filepath = result.getmFilePath();
+    	if (result != null) {
+	        ImageViewHolder holder = result.getmImageViewHolder();
+	        String filepath = result.getmFilePath();
         
-        // Check that the ImageView is still valid
-        if (result != null 
-                    && !holder.isCollected()
-                    && !isViewReused(holder, filepath)) {
-                    addBitmapToCache(filepath, 
-                                     result.getmBitmap());
+	        // Check that the ImageView is still valid
+	        if (!holder.isCollected()
+                && !isViewReused(holder, filepath)) {
                     
-                    // Display the loaded bitmap
-                    holder.getWrappedImageView()
-                              .setImageBitmap(result.getmBitmap());
-                }
+        		addBitmapToCache(filepath, result.getmBitmap());
+                
+                // Display the loaded bitmap
+                holder.getWrappedImageView().setImageBitmap(result.getmBitmap());
+            }
+    	}
     }
 }

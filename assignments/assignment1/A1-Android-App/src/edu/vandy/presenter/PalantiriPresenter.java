@@ -10,6 +10,7 @@ import android.util.Log;
 import edu.vandy.MVP;
 import edu.vandy.common.GenericModel;
 import edu.vandy.common.Utils;
+import edu.vandy.model.Palantir;
 import edu.vandy.model.PalantiriModel;
 import edu.vandy.utils.Options;
 import edu.vandy.view.DotArrayAdapter.DotColor;
@@ -268,6 +269,18 @@ public class PalantiriPresenter
         // perform the BeingRunnable logic, add them to the ArrayList,
         // and then start all the BeingThreads in the ArrayList.
         // TODO - You fill in here.
+    	mBeingsThreads = new ArrayList<BeingThread>();
+    	
+    	for (int i=0; i<beingCount; i++) {
+    		BeingRunnable runnableCmd = new BeingRunnable(i, this);
+    		BeingThread thread = new BeingThread(runnableCmd, i, this);
+    		mBeingsThreads.add(thread);
+    	}
+    	
+    	for (int i=0; i<mBeingsThreads.size(); i++) {
+    		mBeingsThreads.get(i).start();
+    		//Log.i(TAG, "Starting thread: " + i);
+    	}
     }
 
     /**
@@ -279,6 +292,19 @@ public class PalantiriPresenter
         // finish and then calls mView.get().done() to inform the View
         // layer that the simulation is done.
         // @@ TODO -- you fill in here.
+    	    	
+		(new Thread() {
+			  public void run() {
+				  for (Thread beingThread : mBeingsThreads) {
+			    		try {
+			    			beingThread.join();
+			            } catch (InterruptedException e) {
+			            	e.printStackTrace();
+			            }
+			    	}
+				  mView.get().done();
+			  }
+		}).start();
     }
 
     /**

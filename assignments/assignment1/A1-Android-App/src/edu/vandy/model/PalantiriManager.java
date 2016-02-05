@@ -1,8 +1,12 @@
 package edu.vandy.model;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
+
+import android.util.Log;
 
 /**
  * Defines a mechanism that mediates concurrent access to a fixed
@@ -41,6 +45,14 @@ public class PalantiriManager {
         // use a "fair" implementation that mediates concurrent access
         // to the given number of Palantiri.
         // TODO -- you fill in here.
+    	
+    	mPalantiriMap = new HashMap<Palantir, Boolean>();
+    	
+    	for (int i=0; i<palantiri.size(); i++) {
+    		mPalantiriMap.put(palantiri.get(i), true);
+    	}
+    	
+    	mAvailablePalantiri = new Semaphore(palantiri.size(), true);
     }
 
     /**
@@ -55,8 +67,28 @@ public class PalantiriManager {
         // this key with "false" to indicate the Palantir isn't
         // available and then return that palantir to the client.
         // TODO -- you fill in here.
-
-        return null; 
+    	Palantir palantir = null;
+    	
+    	mAvailablePalantiri.acquireUninterruptibly();
+    	
+    	synchronized (this) {
+    		Iterator<Map.Entry<Palantir, Boolean>> entries = mPalantiriMap.entrySet().iterator();
+	
+    	
+    		while (entries.hasNext()) {
+    			Map.Entry<Palantir, Boolean> entry = entries.next();
+ 		  
+ 		   	    if (entry.getValue()) {
+			     
+				   palantir = entry.getKey();
+				   entry.setValue(false);
+				   //Log.i(TAG, "Palantir: " + palantir.getId());
+				   break; 
+			    }
+		    }
+    	}
+    	
+        return palantir; 
     }
 
     /**
@@ -68,6 +100,11 @@ public class PalantiriManager {
         // in a thread-safe manner and release the Semaphore if all
         // works properly.
         // TODO -- you fill in here.
+    	synchronized (this) {
+    		mPalantiriMap.put(palantir, false);	
+    	}
+    	
+    	mAvailablePalantiri.release();
     }
 
     /*

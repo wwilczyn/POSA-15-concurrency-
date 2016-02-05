@@ -5,15 +5,34 @@ import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import vandy.mooc.MVP;
+import vandy.mooc.MVP.ProvidedModelOps;
+import vandy.mooc.R;
+import vandy.mooc.common.GenericAsyncTask;
 import vandy.mooc.common.GenericPresenter;
+import vandy.mooc.common.ModelOps;
 import vandy.mooc.common.Utils;
 import vandy.mooc.model.ImageDownloadsModel;
+import vandy.mooc.utils.loader.ImageLoader;
+import vandy.mooc.utils.loader.ImageLoaderThreadPool;
+import vandy.mooc.utils.loader.ImageLoaderWorkOrder;
+import vandy.mooc.utils.loader.ImageLoaderWorkResult;
+import vandy.mooc.utils.loader.ImageViewHolder;
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.widget.ImageView;
 
 /**
  * This class defines all the image-related operations.  It implements
@@ -60,8 +79,7 @@ public class ImagePresenter
      * Constructor will choose either the Started Service or Bound
      * Service implementation of ImagePresenter.
      */
-    public ImagePresenter() {
-    }
+    public ImagePresenter() { }
 
     /**
      * Hook method called when a new instance of AcronymPresenter is
@@ -100,8 +118,7 @@ public class ImagePresenter
         // passing in the ImageDownloadsModel class to instantiate/manage and
         // "this" to provide ImageDownloadsModel with this MVP.RequiredModelOps
         // instance.
-        super.onCreate(ImageDownloadsModel.class,
-                       this);
+        super.onCreate(ImageDownloadsModel.class, this);
     }
 
     /**
@@ -121,14 +138,14 @@ public class ImagePresenter
         if (allDownloadsComplete()) {
             // Hide the progress bar.
             mView.get().dismissProgressBar();
-            Log.d(TAG,
-                  "All images have finished downloading");
+          
+            Log.d(TAG, "All images have finished downloading");
+            
         } else if (downloadsInProgress()) {
             // Display the progress bar.
             mView.get().displayProgressBar();
 
-            Log.d(TAG,
-                  "Not all images have finished downloading");
+            Log.d(TAG, "Not all images have finished downloading");
         }
 
         // (Re)display the URLs.
@@ -187,7 +204,7 @@ public class ImagePresenter
             // displayed.
             mNumImagesToHandle = mUrlList.size();
 
-            // Iterate over all the URLs, start each download in an
+            // TODO: Iterate over all the URLs, start each download in an
             // AsyncTask, apply a grayscale filter to each image
             // that's downloaded successfully, and finally call
             // onProcessingComplete() when all is done.  The
@@ -195,8 +212,17 @@ public class ImagePresenter
             // separate AsyncTask instances, which should run
             // concurrently via the AsyncTask.THREAD_POOL_EXECUTOR and
             // executeOnExecutor().
-
-            // TODO -- you fill in here.
+            
+            List<DownloadImageAsyncTask> downloadTasks = new ArrayList<DownloadImageAsyncTask>();
+            
+            int count = 0;
+            for (Uri imgUrl : mUrlList) {
+            	// add a new DownloadImageAsyncTask to the list
+            	downloadTasks.add(new DownloadImageAsyncTask(this, this.getApplicationContext()));
+            	
+            	// start the added AsyncTask
+            	downloadTasks.get(count++).executeOnExecutor(ImageLoaderThreadPool.MY_THREAD_POOL_EXECUTOR, imgUrl, mDirectoryPathname);
+            }
         }
     }
 
@@ -212,17 +238,18 @@ public class ImagePresenter
         // image.
         ++mNumImagesHandled;
 
-        if (pathToImageFile == null)
+        if (pathToImageFile == null) {
             // Handle a failed download.
             mView.get().reportDownloadFailure
                 (url,
                  allDownloadsComplete());
-        else /* replyMessage.getResultCode() == Activity.RESULT_OK) */
+        } else { /* replyMessage.getResultCode() == Activity.RESULT_OK) */
             // Handle a successful download.
             Log.d(TAG,
                   "received image at URI "
                   + pathToImageFile.toString());
-                
+        }
+        
         // Try to display all images received successfully.
         tryToDisplayImages();
     }
@@ -235,6 +262,7 @@ public class ImagePresenter
         // If this is last image handled, display images via
         // DisplayImagesActivity.
         if (allDownloadsComplete()) {
+        	Log.i(TAG, "All downloads complete");
             // Dismiss the progress bar.
             mView.get().dismissProgressBar();
 
@@ -245,13 +273,22 @@ public class ImagePresenter
             // exists and also contains at least 1 image to display.
             // Note that if the directory is empty, File.listFiles()
             // returns null.
+            
+            // rewrote the the 'if' into a nested 'if' for easier debugging
             File file = new File(mDirectoryPathname.toString());
-            if (file.isDirectory() 
-                && file.listFiles() != null 
-                && file.listFiles().length > 0) {
-                // Display the results.
-                mView.get().displayResults(mDirectoryPathname);
-            }
+            
+            if (file.exists()) {
+            if (file.isDirectory()) {
+            	if (file.listFiles() != null) {
+            		if (file.listFiles().length > 0) {
+            			
+            			// Display the results.
+            			mView.get().displayResults(mDirectoryPathname);
+            			
+            		} else { Log.e(TAG, "List of files length: " + file.listFiles().length); }
+            	} else { Log.e(TAG, "List of files null."); }
+            } else { Log.e(TAG, "Not a valid directory: " + file.toString()); }
+            } else { Log.e(TAG, "Shit anit even here, yo!"); }
         }
     }  
 

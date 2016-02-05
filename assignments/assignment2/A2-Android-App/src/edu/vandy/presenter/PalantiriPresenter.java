@@ -124,7 +124,7 @@ public class PalantiriPresenter
                 // identifies each Being.
                 // TODO -- you fill in here by replacing "return null"
                 // with the appropriate code.
-                return null;
+                return new BeingThread(runnable, mBeingCount.getAndIncrement(), PalantiriPresenter.this);
             }
         };
 
@@ -361,6 +361,18 @@ public class PalantiriPresenter
         // ThreadFactory instance.  Finally, iterate through all the
         // BeingTasks and execute them on the threadPoolExecutor.
         // TODO - You fill in here.
+    	mBeingsTasks = new ArrayList<BeingAsyncTask>(beingCount);
+    	
+    	for (int i=0; i<beingCount; i++) {
+    		mBeingsTasks.add(new BeingAsyncTask(i, mExitBarrier));
+    	}
+    	
+    	ThreadPoolExecutor executor = new ThreadPoolExecutor(beingCount, beingCount, 0, TimeUnit.SECONDS, 
+    													new LinkedBlockingQueue<Runnable>(beingCount), mThreadFactory);
+    	
+    	for (BeingAsyncTask beingTask : mBeingsTasks) {
+    		beingTask.executeOnExecutor(executor, this);
+    	}
     }
 
     /**
